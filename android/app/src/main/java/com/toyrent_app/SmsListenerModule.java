@@ -15,6 +15,8 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.module.annotations.ReactModule;
 
+import java.util.List;
+
 @ReactModule(name = SmsListenerModule.NAME)
 public class SmsListenerModule extends ReactContextBaseJavaModule {
     public static final String NAME = "SmsListenerModule";
@@ -66,6 +68,9 @@ public class SmsListenerModule extends ReactContextBaseJavaModule {
                                     params.putString("senderPhoneNumber", smsMessage.getOriginatingAddress());
                                     params.putDouble("timestamp", (double) smsMessage.getTimestampMillis());
 
+                                    // Store SMS in SMSStorage
+                                    SMSStorage.storeSMS(reactContext, smsMessage.getMessageBody(), smsMessage.getTimestampMillis());
+
                                     sendEvent("onSMSReceived", params);
                                 }
                             }
@@ -85,5 +90,18 @@ public class SmsListenerModule extends ReactContextBaseJavaModule {
             reactContext.unregisterReceiver(smsReceiver);
             smsReceiver = null;
         }
+    }
+
+    @ReactMethod
+    public void checkStoredSMS() {
+        List<SMSStorage.SMS> storedSMS = SMSStorage.getSMSList(reactContext);
+        for (SMSStorage.SMS sms : storedSMS) {
+            WritableMap params = Arguments.createMap();
+            params.putString("messageBody", sms.messageBody);
+            params.putDouble("timestamp", (double) sms.timestamp);
+
+            sendEvent("onSMSReceived", params);
+        }
+        SMSStorage.clearSMSList(reactContext);
     }
 }

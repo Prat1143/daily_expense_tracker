@@ -58,6 +58,7 @@ const LoginScreen = ({navigation, route}) => {
 
   const handleLogin = async (values, {resetForm, setSubmitting}) => {
     try {
+      // Alert.alert("sdasdsa");
       navigation.navigate('home');
 
       // setDisplayLoader(true);

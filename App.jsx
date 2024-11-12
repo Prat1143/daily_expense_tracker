@@ -1,9 +1,11 @@
 /* eslint-disable prettier/prettier */
+import { AppState } from 'react-native';
 import React, { useEffect, useCallback } from 'react';
 import AppNavigator from './navigation/AppNavigator';
 import { DropdownProvider } from './components/DropdownContext';
 import { NativeModules, NativeEventEmitter, PermissionsAndroid } from 'react-native';
 import SQLite from 'react-native-sqlite-storage';
+import { debounce } from 'lodash';
 
 const { SmsListenerModule } = NativeModules;
 const eventEmitter = new NativeEventEmitter(SmsListenerModule);
@@ -26,7 +28,8 @@ function App() {
             type TEXT NULL,
             amount REAL NULL,
             timestamp INTEGER NOT NULL,
-            company TEXT NULL
+            company TEXT NULL,
+            date TEXT NULL
           )
         `);
         console.log('Table created or already exists');
@@ -62,6 +65,7 @@ function App() {
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
           console.log("SMS permission granted");
           SmsListenerModule.startListeningToSMS();
+          SmsListenerModule.checkStoredSMS();
         } else {
           console.log("SMS permission denied");
         }
@@ -109,60 +113,134 @@ function App() {
     //   }
     // };
 
-    const handleSmsReceived = async (sms) => {
+    const handleStoredSMS = (storedSMS) => {
+      storedSMS.forEach(sms => handleSmsReceived(sms));
+    };
+
+    const handleSmsReceived = debounce(async (sms) => {
       const { messageBody, timestamp } = sms;
     
-      // Improved regex patterns
-      const creditPattern = /refund|credited|deposited|received/i;
-      const debitPattern = /debited|withdrawn|sent|paid/i;
-      const amountPattern = /Rs\.?\s?(\d+(?:,\d+)?(?:\.\d{1,2})?)/i;
-      const companyPattern = /(JioMart|Amazon|Flipkart|Swiggy|Zomato)/i;
+      // Define an array of templates
+      const templates = [
+        {
+          regex: /Rs\.(\d+(?:\.\d{1,2})?)\s+is\s+Debited\s+to\s+A\/c\s+\.\.\.\d+\s+on\s+\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2}\s+\(Clear Bal\s+Rs\.\d+(?:\.\d{1,2})?\)\s+by\s+UPI\s+Ref:\d+\s+-\s+(\w+)/i,
+          type: 'debit'
+        },
+        {
+          regex: /Rs\.(\d+(?:\.\d{1,2})?)\s+is\s+Credited\s+to\s+A\/c\s+\.\.\.\d+\s+on\s+(\d{2}-\d{2}-\d{4})\s+\d{2}:\d{2}:\d{2}\s+\(Clear Bal\s+Rs\.\d+(?:\.\d{1,2})?\)\s+by\s+UPI\s+Ref:\d+\s+-\s+(\w+)/i,
+          type: 'credit'
+        },
+        // Add more templates as needed
+      ];
     
-      console.log("handleSmsReceived--------------------", messageBody);
-    
+      let amount = 0;
       let type = '';
-      if (creditPattern.test(messageBody)) {
-        type = 'credit';
-      } else if (debitPattern.test(messageBody)) {
-        type = 'debit';
+      let company = null;
+      let date = null;
+    
+      // Check each template
+      for (const template of templates) {
+        const match = messageBody.match(template.regex);
+        if (match) {
+          amount = parseFloat(match[1]);
+          date = match[2];
+          type = template.type;
+          if(template.type == "debit") {
+            company = match[2];
+          } else {
+            company = match[3];
+          }
+          break;
+        }
       }
     
-      const companyMatch = messageBody.match(companyPattern);
-      const company = companyMatch ? companyMatch[1] : null;
+      // If no valid template matched, return early
+      if (!type) {
+        console.log("No valid template matched for message:", messageBody);
+        return;
+      }
     
-      console.log("type--------------------", type);
+      console.log("Extracted data - Amount:", amount, "Type:", type, "Company:", company, "Date:", date);
     
-      if (type) {
-        const amountMatches = messageBody.match(new RegExp(amountPattern, 'g'));
-        console.log("amountMatches--------------------", amountMatches);
+      // Store in database
+      try {
+        const storeData = await db.executeSql(`
+          INSERT INTO sms_transactions (message, type, amount, timestamp, company)
+          VALUES (?, ?, ?, ?, ?)
+        `, [messageBody, type, amount, timestamp, company]);
+        console.log("storeData---------------",storeData);
+        console.log('Transaction saved:', { message: messageBody, type, amount, timestamp, company, date });
+      } catch (error) {
+        console.error('Error saving transaction', error);
+      }
+    }, 300, { leading: true, trailing: false });
+
+    // const handleSmsReceived = debounce(async (sms) => {
+    //   const { messageBody, timestamp } = sms;
+    
+    //   // Improved regex patterns
+    //   const creditPattern = /refund|credited|deposited|received/i;
+    //   const debitPattern = /debited|withdrawn|sent|paid/i;
+    //   // const amountPattern = /Rs\.?\s?(\d+(?:,\d+)?(?:\.\d{1,2})?)/i;
+    //   const amountPattern = /Rs\.?\s?(\d+(?:,\d+)?(?:\.\d{1,2})?)/g;
+    //   const companyPattern = /(JioMart|Amazon|Flipkart|Swiggy|Zomato)/i;
+    //   const spamIndicators = [
+    //     /congratulations/i, /winner/i, /free/i, /urgent/i, /limited offer/i,
+    //     /click here/i, /http\b/i, /www\./i
+    //   ];
+
+    //   let isSpam = spamIndicators.some((pattern) => pattern.test(messageBody));
+
+    //   if (isSpam) {
+    //     console.log("Spam detected:", messageBody);
+    //     return; // Early return if spam
+    //   }
+    
+    //   console.log("handleSmsReceived--------------------", messageBody);
+    
+    //   let type = '';
+    //   if (creditPattern.test(messageBody)) {
+    //     type = 'credit';
+    //   } else if (debitPattern.test(messageBody)) {
+    //     type = 'debit';
+    //   }
+    
+    //   const companyMatch = messageBody.match(companyPattern);
+    //   const company = companyMatch ? companyMatch[1] : null;
+    
+    //   console.log("type--------------------", type);
+    
+    //   if (type) {
+    //     const amountMatches = messageBody.match(new RegExp(amountPattern, 'g'));
+    //     console.log("amountMatches--------------------", amountMatches);
         
-        let amount = 0;
-        if (amountMatches) {
-          // Sum up all amounts found in the message
-          amount = amountMatches.reduce((sum, match) => {
-            const numericPart = match.match(/\d+(?:,\d+)?(?:\.\d{1,2})?/);
-            const cleanedMatch = numericPart ? numericPart[0].replace(/,/g, '') : '0';
-            const value = parseFloat(cleanedMatch);
-            console.log("Parsed amount:", match, "->", cleanedMatch, "->", value);
-            return sum + value;
-          }, 0);
-        }
+    //     let amount = 0;
+    //     if (amountMatches) {
+    //       // Sum up all amounts found in the message
+    //       amount = amountMatches.reduce((sum, match) => {
+    //         const numericPart = match.match(/\d+(?:,\d+)?(?:\.\d{1,2})?/);
+    //         const cleanedMatch = numericPart ? numericPart[0].replace(/,/g, '') : '0';
+    //         const value = parseFloat(cleanedMatch);
+    //         console.log("Parsed amount:", match, "->", cleanedMatch, "->", value);
+    //         return sum + value;
+    //       }, 0);
+    //     }
     
-        console.log("Final amount--------------------", amount);
-        console.log("company--------------------", company);
+    //     console.log("Final amount--------------------", amount);
+    //     console.log("company--------------------", company);
     
-        // Store in database
-        try {
-          await db.executeSql(`
-            INSERT INTO sms_transactions (message, type, amount, timestamp, company)
-            VALUES (?, ?, ?, ?, ?)
-          `, [messageBody, type, amount, timestamp, company]);
-          console.log('Transaction saved:', { message: messageBody, type, amount, timestamp, company });
-        } catch (error) {
-          console.error('Error saving transaction', error);
-        }
-      }
-    };
+    //     // Store in database
+    //     try {
+    //       await db.executeSql(`
+    //         INSERT INTO sms_transactions (message, type, amount, timestamp, company)
+    //         VALUES (?, ?, ?, ?, ?)
+    //       `, [messageBody, type, amount, timestamp, company]);
+    //       console.log('Transaction saved:', { message: messageBody, type, amount, timestamp, company });
+    //     } catch (error) {
+    //       console.error('Error saving transaction', error);
+    //     }
+    //   }
+    // }, 300, { leading: true, trailing: false });
 
     const checkDatabaseData = () => {
       db.transaction((tx) => {
@@ -224,11 +302,42 @@ function App() {
     };
   }, []);
 
+  // useEffect(() => {
+  //   console.log("useEffect--------------------");
+  //   const cleanup = handleNotification();
+  //   return () => {
+  //     cleanup.then(cleanupFn => cleanupFn());
+  //   };
+  // }, [handleNotification]);
+
   useEffect(() => {
     console.log("useEffect--------------------");
-    const cleanup = handleNotification();
+    let cleanup;
+    let appStateSubscription;
+  
+    const handleAppStateChange = (nextAppState) => {
+      if (nextAppState === 'active') {
+        SmsListenerModule.checkStoredSMS();
+      }
+    };
+  
+    const initialize = async () => {
+      cleanup = await handleNotification();
+      SmsListenerModule.startListeningToSMS();
+      SmsListenerModule.checkStoredSMS();
+      appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
+    };
+  
+    initialize();
+  
     return () => {
-      cleanup.then(cleanupFn => cleanupFn());
+      if (cleanup) {
+        cleanup.then(cleanupFn => cleanupFn());
+      }
+      SmsListenerModule.stopListeningToSMS();
+      if (appStateSubscription) {
+        appStateSubscription.remove();
+      }
     };
   }, [handleNotification]);
 
