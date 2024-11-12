@@ -130,7 +130,6 @@ function App() {
           regex: /Rs\.(\d+(?:\.\d{1,2})?)\s+is\s+Credited\s+to\s+A\/c\s+\.\.\.\d+\s+on\s+(\d{2}-\d{2}-\d{4})\s+\d{2}:\d{2}:\d{2}\s+\(Clear Bal\s+Rs\.\d+(?:\.\d{1,2})?\)\s+by\s+UPI\s+Ref:\d+\s+-\s+(\w+)/i,
           type: 'credit'
         },
-        // Add more templates as needed
       ];
     
       let amount = 0;
