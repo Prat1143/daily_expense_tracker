@@ -1,6 +1,18 @@
 [
   {
-    "regex": "Rs\\.(\\d+(?:\\.\\d{1,2})?)\\s+is\\s+Debited\\s+to\\s+A\\/c\\s+\\.\\.\\.\\d+\\s+on\\s+\\d{2}-\\d{2}-\\d{4}\\s+\\d{2}:\\d{2}:\\d{2}\\s+\\(Clear Bal\\s+Rs\\.(?:\\d+(?:\\.\\d{1,2})?)\\)\\s+by\\s+UPI\\s+Ref:\\d+\\s+-\\s+(.+?)\\s*$",
+    "regex": "Rs\.(\d+(?:\.\d{1,2})?)\s+is\s+Debited\s+to\s+A\/c\s+\.\.\.\d+\s+on\s+\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2}\s+\(Clear Bal\s+Rs\.(?:\d+(?:\.\d{1,2})?)\)\s+by\s+UPI\s+Ref:\d+\s+-\s+(.+?)\s$",
     "type": "debit"
-  }
+  },
+  {
+    "regex": "Rs\.(\d+(?:\.\d{1,2})?)\s+is\s+Credited\s+to\s+A\/c\s+\.\.\.\d+\s+on\s+(\d{2}-\d{2}-\d{4})\s+\d{2}:\d{2}:\d{2}\s+\(Clear Bal\s+Rs\.(?:\d+(?:\.\d{1,2})?)\)\s+by\s+UPI\s+Ref:\d+\s+-\s+(.+?)\s$",
+    "type": "credit"
+  },
+  {
+      "regex": "A\/c\s+\\d+\s+Debited\s+for\s+Rs:(\d+(?:\.\d{1,2})?)\s+on\s+(\d{2}-\d{2}-\d{4})\s+\d{2}:\d{2}:\d{2}\s+by\s+(?:Mob Bk|UPI|\w+)\s+ref\s+no\s+\d+\s+Avl\s+Bal\s+Rs:(\d+(?:\.\d{1,2})?)\.\sIf\s+not\s+you,\s+Call\s+\d+\s+-\s+(.+)$",
+      "type": "debit"
+    },
+  {
+      "regex": "Your\s+(\w+)\s+A\/c\s+\w+\s+credited\s+with\s+Rs\.(\d+(?:\.\d{1,2})?)\s+on\s+\d{2}-\w{3}-\d{4}\.\s+Info:\s+UPI\/CR\/\d+\/(.+?)\s+Avl\.\s+Bal:\s+Rs\.(\d+(?:\.\d{1,2})?)\.\s*Not\s+you\?\s+Call\s+\d+",
+      "type": "credit"
+    }
 ]
