@@ -12,7 +12,7 @@
         "type": "debit"
     },
 {
-    "regex": "A\\/c\\s+\\*(\\d+)\\s+Credited\\s+for\\s+Rs:(\\d+(?:\\.\\d{2})?)\\s+on\\s+(\\d{2}-\\d{2}-\\d{4})\\s+(\\d{2}:\\d{2}:\\d{2})\\s+by\\s+(\\w+\\s+\\w+)\\s+ref\\s+no\\s+(\\d+)\\s+Avl\\s+Bal\\s+Rs:(\\d+(?:\\.\\d{2})?)\\..*-\\s+(.+)$",
-    "type": "credit"
+  "regex": "A\\/c\\s+\\*(\\d+)\\s+Credited\\s+for\\s+Rs:(\\d+(?:\\.\\d{2})?)\\s+on\\s+(\\d{2}-\\d{2}-\\d{4})\\s+(\\d{2}:\\d{2}:\\d{2})\\s+by\\s+(\\w+\\s+\\w+)\\s+ref\\s+no\\s+(\\d+)\\s+Avl\\s+Bal\\s+Rs:(\\d+(?:\\.\\d{2})?)\\..+?-(.+)$",
+  "type": "credit"
 }
 ]
