@@ -8,7 +8,7 @@
         "type": "credit"
       },
 {
-    "regex": "A\\/c\\s+\\*\\d+\\s+Debited\\s+for\\s+Rs:(\\d+(?:\\.\\d{1,2})?)\\s+on\\s+(\\d{2}-\\d{2}-\\d{4})\\s+\\d{2}:\\d{2}:\\d{2}\\s+by\\s+(?:Mob Bk|UPI|\\w+)\\s+ref\\s+no\\s+\\d+\\s+Avl\\s+Bal\\s+Rs:(\\d+(?:\\.\\d{1,2})?)\\.\\s*If\\s+not\\s+you,\\s+Call\\s+\\d+\\s+-\\s+(.+)$",
-    "type": "debit"
-  }
+        "regex": "A\\/c\\s+\\*(\\d+)\\s+Debited\\s+for\\s+Rs\\:(\\d+(?:\\.\\d{1,2})?)\\s+on\\s+(\\d{2}-\\d{2}-\\d{4})\\s+\\d{2}:\\d{2}:\\d{2}\\s+by\\s+(?:Mob Bk|UPI|[\\w\\s]+)\\s+ref\\s+no\\s+\\d+\\s+Avl\\s+Bal\\s+Rs\\:(\\d+(?:\\.\\d{1,2})?)\\.\\s*If\\s+not\\s+you,\\s+Call\\s+\\d+\\s+-(.+)$",
+        "type": "debit"
+    }
 ]
